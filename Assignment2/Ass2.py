@@ -79,46 +79,7 @@ def calc_sigma_hat(samples, mean_hat):
     return sumation/len(samples)
 
 
-
-def gamma_func(alpha):
-    a = 1
-    for i in range(1, alpha+1):
-        a = a * i
-    return a
-
-def calculate_gamma_distrobution(x, alpha, beta):
-    # Split function into parts and return the hole function
-    part1 = (beta**alpha) * gamma_func(alpha)
-    part2 = x**(alpha-1)
-    part3 = np.e**(x/beta)
-    return (1/part1)*part2*part3
-
-def calculate_gaussian_distrobution(x, mean, sd):
-    part1 = np.sqrt(sd)*np.sqrt(2*np.pi)
-    part2 = (x-mean)**2
-    return (1/part1) * np.e**(-1)*(1/2)*(part2/sd)
-
-
-
-# Plot functions
-def plot_gamma_distrobution(samples, alpha, beta):
-    numbins = 200
-    #plt.hist(samples, numbins)
-    x = np.linspace (0, 30, 100) 
-    y = stats.gamma.pdf(x, a=alpha, scale=(beta)) * p_C0
-    #y = calculate_gamma_distrobution(x, alpha, beta) * p_C0
-    plt.plot(x, y)
-    plt.savefig("estimated_gamma_distrobution.png")
-    plt.show()
-
-def plot_gaussian_distrobution(samples, mean, sd):
-    x = np.linspace (-20, 60, 100) 
-    #y = stats.norm.pdf(x, mean, sd)
-    y = calculate_gaussian_distrobution(x, mean, sd)
-    plt.plot(x, y)
-    plt.savefig("estimated_gaussian_distrobution.png")
-    plt.show()
-
+""" Function to plot both distrobutions using the estimated parameters"""
 def plot_both_distro(mean, sd, alpha, beta):
     x = np.linspace(-20, 100, 241)
     y1 = stats.norm.pdf(x, mean, sd) * p_C1
@@ -142,13 +103,8 @@ def plot_both_distro(mean, sd, alpha, beta):
     # Show the plot
     plt.show()
 
-def plot_samples(x0, x1):
-    plt.plot(x0, np.zeros(np.shape(x0)), 'o')
-    plt.plot(x1, np.ones(np.shape(x1)), 'o')
-    plt.show()
 
-
-
+""" Function returning which of the two classes a samples i most likely in"""
 def test_one_sample(xi, mean, sd, alpha, beta):
     p0 = stats.gamma.pdf(xi, a=alpha, scale=beta)
     p1 = stats.norm.pdf(xi, mean, sd)
@@ -156,8 +112,13 @@ def test_one_sample(xi, mean, sd, alpha, beta):
         return 0
     else:
         return 1
-misclassified = []
+
+
+# Lists of misclassified / correctly classified samples
+missclassified = []
+not_missclassified = []
 def test_samples(test_samples, test_labels, mean, sd, alpha, beta):
+    """ Test the training set on the Bayes' classification"""
     classified_0 = 0
     classified_1 = 0
     class0_true = 0
@@ -170,16 +131,18 @@ def test_samples(test_samples, test_labels, mean, sd, alpha, beta):
             classified_0+=1
             if (not test_labels[i]):
                 class0_true+=1
+                not_missclassified.append(test_samples[i])
                 continue
-            misclassified.append(test_samples[i])
+            missclassified.append(test_samples[i])
             class0_false+=1
         else:
             classified_1+=1
             if (test_labels[i]):
                 class1_true+=1
+                not_missclassified.append(test_samples[i])
                 continue
             class1_false+=1
-            misclassified.append(test_samples[i])
+            missclassified.append(test_samples[i])
 
     accuracy = (class0_true + class1_true)/len(test_samples)
     print(f"of {len(test_samples)} samples --- C0 got {classified_0} and C1 got {classified_1}")
@@ -188,24 +151,39 @@ def test_samples(test_samples, test_labels, mean, sd, alpha, beta):
     print(f"Accuracy was {accuracy}%")
 
 
+""" Plotting misclassified samples with correctly classified samples """
+def plot_misclassifiedData(not_missclassified, missclassified):
+    # Create the figure and axis
+    plt.figure(figsize=(8, 6))
+    # Plot the histogram for missclassified data (e.g., red)
+    plt.hist(missclassified, bins=60, alpha=0.6, color='red', label='Misclassified')
+
+    # Plot the histogram for correctly classified data (e.g., blue)
+    plt.hist(not_missclassified, bins=60, alpha=0.6, color='blue', label='Correctly Classified')
+
+    # Add labels and legend
+    plt.xlabel('Data Points')
+    plt.ylabel('Frequency')
+    plt.title('Histogram of Misclassified vs Correctly Classified Data')
+    plt.legend(loc='upper right')
+    plt.savefig("misclassified.png")
+    # Show the plot
+    plt.show()
+
+
 
 
 if __name__ == "__main__":
-    #derive_info_data()
+    derive_info_data()
 
     beta_hat = calc_beta_hat(train_data_0)
-    #plot_gamma_distrobution(train_data_0, 2, beta_hat)
-
     mean_hat = calc_mean_hat(train_data_1)
     sigma_hat = calc_sigma_hat(train_data_1, mean_hat)
-    #plot_gaussian_distrobution(train_data_1, mean_hat, sigma_hat)
-    plot_both_distro(mean_hat, sigma_hat, 2, beta_hat)
-    #plot_samples(train_data_0, train_data_1)
 
-    #test_one_sample(9.146, mean_hat, sigma_hat, 2, beta_hat)
+    plot_both_distro(mean_hat, sigma_hat, 2, beta_hat)
+
     test_samples(test_data, test_labels, mean_hat, sigma_hat, 2, beta_hat)
-    #print(beta_hat)
-    #print(mean_hat)
-    #print(sigma_hat)
+
+    plot_misclassifiedData(np.array(not_missclassified), np.array(missclassified))
 
 
